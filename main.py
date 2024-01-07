@@ -1,12 +1,19 @@
 from requests import get as HttpGet
-from json import dumps as DumpJSON
+from json import dumps as DumpJSON, loads as LoadJSON
 from typing import TypedDict, Literal
+from subprocess import Popen as CMD
+from os import remove as DeleteFile
+
+CreateFile = CMD(["node", "gen-basis-list.js"])
+CreateFile.wait()
 
 CLDR_ANNOTATIONS_URL = "https://raw.githubusercontent.com/unicode-org/cldr-json/main/cldr-json/cldr-annotations-full/annotations/en/annotations.json" # Source of keywords
-EMOJI_LATEST_URL = "https://unpkg.com/emoji.json/emoji.json" # General Emoji Data, from https://www.npmjs.com/package/emoji.json
-
 CLDR_ANNOTATIONS = HttpGet(CLDR_ANNOTATIONS_URL).json()["annotations"]["annotations"]
-EMOJI_LATEST = HttpGet(EMOJI_LATEST_URL).json()
+
+emoji_latest: any
+with open("emoji.json", "r", encoding="utf-8") as file:
+    emoji_latest = LoadJSON(file.read())
+DeleteFile("emoji.json")
 
 FINAL_FILE_PATH = "unicode-emoji.json"
 
@@ -25,7 +32,7 @@ def JSONDumpsUTF8(Object: any, indent=4) -> bytes:
 
 def ParseEmojiList():
     InfoBuild: dict[str, dict[str, list[EmojiListItem]]] = {}
-    for emoji in EMOJI_LATEST:
+    for emoji in emoji_latest:
         if emoji["char"] not in CLDR_ANNOTATIONS:
             continue
         if emoji["group"] not in InfoBuild:
@@ -41,13 +48,12 @@ def ParseEmojiList():
     FinalDisplay: EmojiRoot = {
         "comment": [
             "STOP!",
-
-            "This is the official Emoji 15.0 list from Unicode,",
-            "which can be found at https://unicode.org/emoji/charts/emoji-list.html",
-            "It should never be changed unless the official list does,",
-            "and even then, only if you know what you're doing.",
-
-            "The list of images for Forumoji is kept in forumoji.json"
+            "",
+            "This list should never be manually edit,",
+            "it's automatically generated with the script found",
+            "at: https://t.ly/GhhA3, see README.",
+            "",
+            "The list of images for Forumoji is kept in emoji.json"
         ],
         "category": "root",
         "contents": []
